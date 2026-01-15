@@ -1,5 +1,18 @@
-# ESR Report Template 
-This is a template repository for creating Ecosystem Status Reports in the Gulf region.
+# King Mackerel Ecosystem and Socioeconomic Profile (ESP) Report
+
+## Contributing to this report
+### Adding an indicator idea / dataset
+
+1. On the repository home page, click the projects tab and select the King-Mackerel-ESP-metric-list project.
+2. Click the plus button to add an issue using the Metric Idea Form. Make sure the linked repository is Gulf-IEA/King-Mackerel-ESP. 
+3. Fill out any information you have on the data needed to create the indicator, including data source, POC, etc. If you don't have all the information right away that's fine, it can be added later.
+
+### Writing code to manipulate data into an indicator
+
+1. Ensure you are using R version 4.3.3 on your local machine. This is the version being used by the lock file. 
+2. Clone the repository onto your local machine.
+3. When you first open the repository in RStudio, you will prompted to install the packages in the lockfile. Run renv::restore() to restore the project library.
+4. To work on an indicator, follow the guidance in the [ESR Best Practices](https://gulf-iea.github.io/ESR-Best-Practices/) document (chapter 4: data processing). 
 
 ## Folder structure
 * data 
@@ -31,7 +44,7 @@ This repository also contains two issue template files (within the .github/ISSUE
 * metric idea - to be filled out whenever there is an idea for a new metric that needs to be considered for inclusion in the current ESR. These issues will populate the "Indicator scoping" project
 * metric production - to be filled out once a metric that is being used in the current ESR has been developed (data identified and code written to create final formatted files). These issues will populate the quarto "Methods Document"
 
-A Github action does x, y, z
+A Github action renders and publishes the quarto book automatically.
 
 ------------------------------------------------------------------------
 
