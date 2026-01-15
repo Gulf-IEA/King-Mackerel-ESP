@@ -1,0 +1,78 @@
+project: 
+  type: book
+  output-dir: _book
+
+book: 
+  page-navigation: true
+  title: "[Template] Ecosystem Status Report" 
+  date: last-modified
+  site-url: "https://gulf-iea.github.io/ESR-Report-Template" 
+  repo-url: "https://github.com/Gulf-IEA/ESR-Report-Template"
+  repo-actions: [edit, source, issue]
+  favicon: report/assets/favicon.ico
+  downloads: [pdf, docx]
+  search: true
+  author:
+    - name: Gulf of America Integrated Ecosystem Assessment Program
+      affiliations:
+        - name: NOAA Fisheres
+          department: Southeast Fisheries Science Center
+  chapters:
+    - index.qmd
+    - report/content/performance_indicators.qmd
+    - report/content/risk_indicators.qmd
+    - report/content/synthesis.qmd
+    - report/content/recommendations.qmd
+    - report/content/acknowledgements.qmd
+    - report/content/contributors.qmd
+    - report/content/references.qmd
+
+  page-footer:
+    right: "This page is built with [Quarto](https://quarto.org/)."
+    left: "&copy; CC-1.0"
+  
+  sidebar:
+    background: "#D9E3E4"
+    logo: "https://raw.githubusercontent.com/nmfs-opensci/assets/main/logo/nmfs-opensci-logo3.png"
+    favicon: images/favicon.ico
+    pinned: true
+    align: center
+    tools: 
+      - icon: globe
+        href: https://nmfs-opensci.github.io
+        text: "NMFS Open Science"
+    style: "docked"
+    search: true
+    collapse-level: 1
+
+bibliography: [report/content/references.bib]
+
+execute:
+  echo: false
+  code-overflow: wrap
+
+format:
+  titlepage-pdf:
+    documentclass: scrbook
+    classoption: ["oneside", "open=any"]
+    titlepage: "plain"
+    keep-tex: true
+  docx:
+    toc: true
+    toc-depth: 3
+    lof: true
+    reference-doc: report/custom-reference-doc.docx
+    always_allow_html: true
+  html:
+    theme: [cosmo, report/assets/theme.scss] 
+    toc: true
+    toc-depth: 3
+
+filters:
+  - report/assets/include-files.lua
+  - quarto
+
+# Comment next 2 lines if the PDF is having trouble
+metadata-files:
+  - report/_frontmatter.yml
+ 

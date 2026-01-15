@@ -1,0 +1,56 @@
+on:
+  workflow_dispatch:
+  push:
+    branches: main
+
+name: Quarto Publish
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # --- MODIFICATION 1: Update R Version ---
+      - name: Install R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.4.3' # CHANGED to match new renv.lock file
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          tinytex: true
+
+      # --- MODIFICATION 2: Install System Dependencies (Fixes 'magick') ---
+      # 'magick' requires the libmagick++-dev system library on Linux.
+      - name: Install System Dependencies for R
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmagick++-dev
+
+      # --- MODIFICATION 3: Install R Dependencies (Fixes IEAnalyzeR rate limit) ---
+      # Inject GITHUB_TOKEN here to bypass rate limits for public GitHub packages (IEAnalyzeR)
+      - name: Install R Dependencies (Forced Order)
+        run: |
+          # Use Rscript -e for single-line commands; the `if` is unnecessary here
+          # since `setup-renv` ensures it's available.
+          
+          # 1. Install critical dependencies using Rscript -e
+          Rscript -e 'install.packages(c("here", "remotes"))'
+          
+          # 2. Run renv::restore()
+          Rscript -e 'renv::restore()'
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Render and Publish
+        uses: quarto-dev/quarto-actions/publish@v2
+        with:
+          target: gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,111 @@
+name: Metric Idea Form
+description: Use this issue template if you have a lead on a potential metric to include in the ESR
+title: "[Metric Idea]: "
+labels: ["Idea"]
+
+body:
+  - type: markdown
+    attributes:
+      value: "Please fill this form out during the development of a potential metric for an ESR. Review and edit this form as more information becomes available."  
+   
+  - type: input
+    id: metric_name
+    attributes:
+        label: Potential Metric Name
+        description: What is the name of this potential indicator to include in the ESR?
+        placeholder: "Ex: Sea Surface Temperature"
+    validations:
+        required: true
+        
+  # Metric Description
+  - type: textarea
+    id: metric_description
+    attributes:
+        label: Metric description
+        description: Plain language description (one sentence).
+    validations:
+        required: true
+
+  # Metric Narrative
+  - type: textarea
+    id: metric_narrative
+    attributes:
+        label: Metric narrative
+        description: Please add some details about where this idea came from and why it is important.
+    validations:
+        required: true
+        
+  # Metric Data Source
+  - type: textarea
+    id: metric_data_source
+    attributes:
+        label: Data Source
+        description: What is the source of the data (e.g., the program name).
+        
+  # Metric Data Source Link
+  - type: input
+    id: metric_data_link
+    attributes:
+        label: Data Source Link
+        description: Input hyperlink to the data (if available).
+        
+  # Metric References
+  - type: textarea
+    id: reference
+    attributes:
+        label: References
+        description: Add any references such as peer-reviewed or gray literature here.
+        
+  # Your Name
+  - type: input
+    id: contributor_name
+    attributes:
+        label: IEA POC
+        placeholder: Jane Doe
+        description: This is NOT necessarily the person that initially filled out the form, but the IEA POC will be the person who will be responsible for scouting, finding data, and some initial exploratory data analysis.
+        
+  # Your email
+  - type: input
+    id: contributor_email
+    attributes:
+        label: IEA POC email
+        placeholder: Jane.Doe@noaa.gov
+        
+  # SME Name
+  - type: input
+    id: sme_name
+    attributes:
+        label: External SME name
+        placeholder: John Doe
+        
+  # SME email
+  - type: input
+    id: sme_email
+    attributes:
+        label: External SME email
+        placeholder: John.Doe@miami.edu
+
+  # Data Steward Name
+  - type: input
+    id: data_steward_name
+    attributes:
+        label: Data Steward name
+        placeholder: Bob Dole
+        
+  # Data Steward email
+  - type: input
+    id: data_steward_email
+    attributes:
+        label: Data Steward email
+        placeholder: Bob.Dole@miami.edu
+        
+  # Contributors
+  - type: textarea
+    id: contributors
+    attributes:
+        label: Other Contributors
+        description: Add any other collaborator names (internal or external).
+        
+  - type: markdown
+    attributes:
+      value: "Don't forget to add this issue to the appropriate project board!"      

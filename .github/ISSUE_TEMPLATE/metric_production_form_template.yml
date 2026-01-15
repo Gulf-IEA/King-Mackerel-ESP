@@ -1,0 +1,330 @@
+---
+name: Metric Production Form
+description: "This form is to be filled out once all details about an ESR Metric have been compiled. Responses will directly populate the ESR Methods Document." 
+title: "[PRODUCTION]:"
+labels: '[PRODUCTION]'
+
+body:
+  - type: markdown
+    id: description
+    attributes:
+      value: |
+        Please do not fill out this form until ALL details have been compiled for your metric. These responses will directly populate the ESR Methods Document. Please contact Brendan, Brittany, Carissa, Mandy, or Will with questions.
+        
+  - type: input
+    id: metric
+    attributes:
+      label: Metric Title (Full Name)
+      description: The full, spelled out name of this metric.
+      placeholder: Ex. Sea Surface Temperature (rather than SST)
+    validations:
+      required: true
+        
+  - type: input
+    id: root
+    attributes:
+      label: Metric File Root Name
+      description: For all files related to this metric, what will the shortened prefix be?
+      placeholder: ex. degree_heating_wks for Degree Heating Weeks
+    validations:
+      required: true
+      
+  - type: input
+    id: shortname
+    attributes:
+      label: Short Code Name
+      description: What is the abbreviation or short name for this metric?
+      placeholder: ex. SST for Sea Surface Temperature
+    validations:
+      required: false
+      
+  - type: dropdown
+    id: parent_indicator
+    attributes:
+      label: Parent Indicator
+      description: What Indicator will this metric contribute to?
+      multiple: false
+      options:
+        - Test1
+        - Test2
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: category
+    attributes:
+      label: Indicator Category
+      description: To what Category do this metric and indicator belong?
+      multiple: false
+      options:
+        - Test3
+        - Test4
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Plain Language Description
+      description: Please describe this metric using plain language in one sentence or less.
+      value: "Satellite-derived monthly sea surface temperature for the Gulf of America EEZ."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: effort_level
+    attributes:
+      label: Level of Effort Required to Update Metric
+      description: How intensive is the update process for these data?
+      multiple: false
+      options:
+        - High Effort 
+        - Medium Effort
+        - Low Effort (automated)
+    validations:
+      required: true
+
+  - type: input
+    id: data_source
+    attributes:
+      label: Data Source (Organization and Program)
+      description: What Program or Organization is responsible for these data?
+      placeholder: ex. EPA BEACON Program
+    validations:
+      required: true
+
+  - type: input
+    id: data_access
+    attributes:
+      label: Data Access Point or Portal
+      description: What Person, Service or Website are you using to Access these Data?
+      placeholder: ex. NOAA OCM ENOW Portal (with link)
+    validations:
+      required: true
+
+  - type: input
+    id: data_link
+    attributes:
+      label: Direct Link to Data
+      description: If available, please provide a direct link to the data.
+      placeholder:
+    validations:
+      required: false
+
+  - type: dropdown
+    id: public_availability
+    attributes:
+      label: Public Availability and Privacy
+      description: State the public availability of source data for this indicator.
+      multiple: false
+      options:
+        - Source data are publicly available.
+        - Source data are NOT publicly available.
+    validations:
+      required: true
+
+  - type: textarea
+    id: data_availability
+    attributes:
+      label: Data Availability Statement
+      description: Please provide the required Data Availability Statement for these data, if necessary
+      value: "ex. Due to confidentiality agreements, supporting data can only be made available to bona fide researchers subject to a non-disclosure agreement. Details of the data and how to request access are available from [digital resource manager contact info] at [institution where data reside]."
+    validations:
+      required: false
+
+  - type: textarea
+    id: data_caveats
+    attributes:
+      label: Data Caveats
+      description: Please provide any notes or caveats about these data, if necessary.
+      value: "ex. Data were not collected in 2020."
+    validations:
+      required: false
+
+  - type: input
+    id: spatial_extent
+    attributes:
+      label: Plain Language Description of the Spatial Extent of Data
+      description: Please describe the spatial extent of these data using plain language.
+      placeholder: "ex. Texas and Louisiana Shelf"
+    validations:
+      required: true
+
+  - type: input
+    id: spatial_bounds
+    attributes:
+      label: Spatial Boundaries of Data
+      description: Please provide the latitude and longitude boundaries of these data, if possible. Please use the following format- (lat,lon), (lat,lon), etc
+      placeholder: "ex. '(25, 90), (26,91)', etc..."
+    validations:
+      required: false
+
+  - type: input
+    id: spatial_resolution
+    attributes:
+      label: Spatial Resolution of Data
+      description: Please provide the spatial resolution of these data, if possible.
+      placeholder: "ex. 8km grid"
+    validations:
+      required: false
+
+  - type: input
+    id: temporal_extent
+    attributes:
+      label: Temporal Extent (Time Period) of Data
+      description: Please provide the temporal extent of these data. Please use the following format- [min] - [max]
+      placeholder: "undefined FILL THIS IN WITH A SPECIFIC DATETIME"
+    validations:
+      required: false
+
+  - type: input
+    id: temporal_resolution
+    attributes:
+      label: Temporal Resolution of Data
+      description: Please provide the temporal resolution of these data.
+      placeholder: "ex. monthly or annual"
+    validations:
+      required: true
+
+  - type: input
+    id: unit
+    attributes:
+      label: Unit of Measurement
+      description: Please provide the unit of measurement for these data.
+      placeholder: "ex. mg/ml"
+    validations:
+      required: true
+
+  - type: textarea
+    id: confidence
+    attributes:
+      label: Confidence or Uncertainty Information
+      description: Please provide any information about uncertainty or statistical confidence related to these data, if necessary.
+      value:
+    validations:
+      required: false
+
+  - type: textarea
+    id: method
+    attributes:
+      label: Methods
+      description: Please provide a full plain language description of the methods used to handle and process these data.
+      value:
+    validations:
+      required: true
+
+  - type: input
+    id: code_link
+    attributes:
+      label: Direct Link to Code
+      description: Please provide direct link to the code used to process these data, if necessary.
+      placeholder:
+    validations:
+      required: false
+
+  - type: input
+    id: final_data_link
+    attributes:
+      label: Direct Link to Final Data
+      description: Please provide direct link to the final data for this metric.
+      placeholder:
+    validations:
+      required: true
+
+  - type: dropdown
+    id: visualization_type
+    attributes:
+      label: Type of Visualization
+      description: State the type of visualization that will be used to display this metric. Multiple options can be selected.
+      multiple: true
+      options:
+        - Time Series Trend
+        - Map
+        - Table
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: trend_analysis_method
+    attributes:
+      label: Trend Analysis Method
+      description: Select the approach used to develop the Status and Trend for this time series, if necessary.
+      multiple: false
+      options:
+        - Test5
+        - Test6
+    validations:
+      required: false
+
+  - type: input
+    id: iea_poc
+    attributes:
+      label: IEA Point of Contact
+      description: The name of the IEA POC for this metric
+      placeholder: Ex. Willem Klajbor
+    validations:
+      required: true
+
+  - type: input
+    id: iea_poc_email
+    attributes:
+      label: IEA Point of Contact Email
+      description: The email address for the IEA POC for this metric
+      placeholder: Ex. willem.klajbor@noaa.gov
+    validations:
+      required: true
+
+  - type: input
+    id: external_sme
+    attributes:
+      label: External Subject Matter Expert
+      description: The name of the subject matter expert external to the IEA program who is assisting with this metric.
+      placeholder: Ex. Tim Tebow
+    validations:
+      required: true
+
+  - type: input
+    id: external_sme_email
+    attributes:
+      label: External Subject Matter Expert Email
+      description: The email address for the subject matter expert external to the IEA program who is assisting with this metric.
+      placeholder: Ex. timothy.tebow@uf.edu
+    validations:
+      required: true
+
+  - type: input
+    id: data_steward
+    attributes:
+      label: Data Steward
+      description: If different, please provide the name of the data steward or provider for these data.
+      placeholder: Ex. Walter Clayton
+    validations:
+      required: false
+
+  - type: input
+    id: data_steward_email
+    attributes:
+      label: Data Steward Email
+      description: If different, please provide the email of the data steward or provider for these data.
+      placeholder: Ex. walter.clayton@uf.edu
+    validations:
+      required: false
+
+  - type: textarea
+    id: contributors
+    attributes:
+      label: Other Contributors
+      description: Please list any other contributors who have participated in populating these metric data.
+      placeholder: Ex. Jim, Bob, Joe and Amy
+    validations:
+      required: false
+
+  - type: textarea
+    id: other_info
+    attributes:
+      label: Other Information
+      description: Use this space to provide any other pertinent information related to this metric.
+      placeholder: 
+    validations:
+      required: false

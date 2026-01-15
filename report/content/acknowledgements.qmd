@@ -1,0 +1,12 @@
+---
+title: Acknowledgments
+---
+
+## Contributions
+
+This report would like to acknowledge the efforts and contributions of: 
+
+
+## Resources
+
+This repo and GitHub Action associated with generating this report was based on the Openscapes tutorial [quarto-website-tutorial](https://github.com/Openscapes/quarto-website-tutorial) by Julia Lowndes and Stefanie Butland.
