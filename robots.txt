@@ -1,1 +1,1 @@
-Sitemap: https://gulf-iea.github.io/ESR-Report-Template/sitemap.xml
+Sitemap: https://gulf-iea.github.io/King-Mackerel-ESP/sitemap.xml
