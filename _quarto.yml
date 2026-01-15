@@ -4,10 +4,10 @@ project:
 
 book: 
   page-navigation: true
-  title: "[Template] Ecosystem Status Report" 
+  title: "Gulf of America King Mackerel Ecosystem and Socioeconomic Profile (ESP)" 
   date: last-modified
-  site-url: "https://gulf-iea.github.io/ESR-Report-Template" 
-  repo-url: "https://github.com/Gulf-IEA/ESR-Report-Template"
+  site-url: "https://gulf-iea.github.io/King-Mackerel-ESP" 
+  repo-url: "https://github.com/Gulf-IEA/King-Mackerel-ESP"
   repo-actions: [edit, source, issue]
   favicon: report/assets/favicon.ico
   downloads: [pdf, docx]
@@ -15,14 +15,14 @@ book:
   author:
     - name: Gulf of America Integrated Ecosystem Assessment Program
       affiliations:
-        - name: NOAA Fisheres
+        - name: NOAA Fisheries
           department: Southeast Fisheries Science Center
   chapters:
     - index.qmd
-    - report/content/performance_indicators.qmd
-    - report/content/risk_indicators.qmd
-    - report/content/synthesis.qmd
-    - report/content/recommendations.qmd
+    - report/content/Section1.qmd
+    - report/content/Section2.qmd
+    - report/content/Section3.qmd
+    - report/content/Section4.qmd
     - report/content/acknowledgements.qmd
     - report/content/contributors.qmd
     - report/content/references.qmd

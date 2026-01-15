@@ -1,0 +1,6 @@
+---
+title: Section 4: xxx
+lightbox: TRUE
+---
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean molestie eleifend lectus sed ultricies. Quisque gravida augue quis bibendum aliquam. Praesent id elit in quam rutrum rhoncus. Suspendisse ornare cursus turpis nec euismod. Mauris tristique libero eget risus imperdiet faucibus. Pellentesque congue a velit et pharetra. Cras semper non mauris et sagittis. Etiam maximus lectus in hendrerit dapibus. Sed aliquet tellus non molestie elementum. Etiam quis dapibus ligula. Cras ac ultrices nunc.

@@ -1,8 +1,0 @@
----
-title: Integrated ecosystem perspectives
-lightbox: TRUE
----
-
-##  {.unnumbered}
-
-Synthesis
