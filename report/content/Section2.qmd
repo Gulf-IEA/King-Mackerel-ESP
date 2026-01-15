@@ -1,5 +1,5 @@
 ---
-title: Section 2: xxx
+title: Section 2
 lightbox: TRUE
 ---
 
