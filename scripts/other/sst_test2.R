@@ -1,8 +1,12 @@
 
+library(abind)
 library(ncdf4)
 library(terra)
 library(sf)
 
+# define years  --------------------------------
+styear <- 1982
+enyear <- 2025
 
 # define spatial domain  --------------------------------
 min_lon <- -98
@@ -85,9 +89,51 @@ gulf_eez2 <- gulf_eez2 |>
   st_transform(crs = st_crs(4326)) |>
   st_simplify(dTolerance = 1000)
 
+gulf_eez <- terra::intersect(eez, iho) |>
+  st_as_sf() |> 
+  st_transform(crs = st_crs(4326))
+
 
 
 setwd("~/R_projects/ESR-indicator-scratch/data/intermediate_files")
+
+for(i in styear:enyear){
+  cat(i, '\n')
+  tmp <- paste0('anom_',i) |> readRDS()
+  
+  if(i==styear){
+    anom_a <- tmp$anom
+    dates <- tmp$time
+  } else {
+    anom_a <- abind(anom_a,
+                    tmp$anom,
+                    along = 3)
+    dates <- c(dates,
+               tmp$time)
+  }
+}
+
+
+anom_a <- aperm(anom_a, c(2,1,3))
+anom_r <- rast(anom_a[dim(anom_a)[1]:1,,], crs="EPSG:4326") 
+ext(anom_r) <- c(min_lon, max_lon, min_lat, max_lat)
+time(anom_r) <- as.Date(dates)
+month_index <- format(time(anom_r), "%Y-%m")
+
+sst_subset <- crop(anom_r, gulf_eez) |> mask(gulf_eez)
+sst_monthly_layers <- tapp(sst_subset, index = month_index, fun = mean, na.rm = TRUE)
+ts_values <- global(sst_monthly_layers, fun = "mean", na.rm = TRUE, weighted = T)
+
+sst_timeseries <- data.frame(
+  Date = as.Date(paste0(unique(month_index), "-01")), # Convert index back to Date
+  SST = ts_values$mean
+)
+sst_sd <- sd(sst_timeseries$SST)
+
+plot(sst_timeseries$Date, sst_timeseries$SST, typ = 'l', lwd = 2, 
+     panel.first = abline(h = c(sst_sd, 0, -sst_sd), lty = c(1, 5, 1)))
+
+
 
 anom_1982 <- readRDS('anom_1982')
 anom_1982_a <- aperm(anom_1982$anom, c(2,1,3))
