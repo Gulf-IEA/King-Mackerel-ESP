@@ -144,13 +144,13 @@ for(i in styear:enyear){
 # tmp$sst[which(tmp$sst>100)]
 # which(tmp$sst>100,arr.ind=T)[,3] |> unique()
 # hist(tmp$sst[,,98])
+# sst_a[which(!is.finite(sst_a))] |> unique()
 
 sst_a <- aperm(sst_a, c(2,1,3))
 sst_r <- rast(sst_a[dim(sst_a)[1]:1,,], crs="EPSG:4326") 
 ext(sst_r) <- c(min_lon, max_lon, min_lat, max_lat)
 time(sst_r) <- as.Date(dates)
 
-sst_a[which(!is.finite(sst_a))] |> unique()
 
 # for(i in styear:enyear){
 #   cat(i, '\n')
@@ -200,6 +200,15 @@ ann_gwide_max <- tapp(ann_gwide, index = year_index, fun = max, na.rm = TRUE)
 
 ann_gwide_min_ts <- global(ann_gwide_min, fun = min, na.rm = TRUE, weighted = T)
 ann_gwide_max_ts <- global(ann_gwide_max, fun = max, na.rm = TRUE, weighted = T)
+
+ann_gwide_layers <- tapp(ann_gwide, index = year_index, fun = quantile, probs = .95, na.rm = TRUE)
+ann_gwide_q95_ts <- global(ann_gwide_layers, fun = median, na.rm = TRUE, weighted = T)
+ann_gwide_q95_ts <- data.frame(
+  year = unique(year_index), # Convert index back to Date
+  ssta = ann_gwide_q95_ts$global
+)
+plot(ann_gwide_q95_ts$year, ann_gwide_q95_ts$ssta, typ = 'o', pch = 16, 
+     panel.first = grid())
 
 # bday()
 gwide_ts <- global(ann_gwide, fun = c('mean',"range"), na.rm = TRUE, weighted = T)
