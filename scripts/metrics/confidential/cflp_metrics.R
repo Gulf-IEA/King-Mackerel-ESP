@@ -1,6 +1,22 @@
 
+library(dplyr)
 library(here)
 library(readxl)
+library(sf)
+library(scatterpie)
+library(ggplot2)
+library(terra)
+
+setwd("C:/Users/brendan.turley/Documents/data/shapefiles/cflp_statgrid")
+sz_shp <- vect('CFLP_StatGrid_2013_v20140210.shp') |>
+  st_as_sf()
+sz_shp$AREA_FISHED <- sz_shp$SZ_ID
+
+setwd("~/data/shapefiles/ne_10m_admin_1_states_provinces")
+states <- vect('ne_10m_admin_1_states_provinces.shp') |> makeValid() |>
+  st_as_sf() 
+states <- st_crop(states, xmin = -100, ymin = 24, xmax = -80, ymax = 31)
+
 
 ### boem platforms
 setwd("~/R_projects/ESR-indicator-scratch/data/processed")
@@ -377,3 +393,73 @@ b <- boxplot(cpue ~ LAND_YEAR, data = subset(cflp_hl_1,
 b <- boxplot(tot_kg ~ LAND_YEAR, data = subset(cflp_hl_1,
                                              COMMON_NAME=='MACKERELS, KING AND CERO'),
              pch = 16, lty = 1, varwidth = F, staplewex = 0, lwd = 2, outline = F)
+
+
+### where kmk are caught per season
+gulf_kmk_trips <- subset(cflp_hl_1, 
+                         COMMON_NAME=='MACKERELS, KING AND CERO' & REGION=='GOM')
+tot_land <- aggregate(tot_kg ~ SCHEDULE_NUMBER, #+
+                      # REGION + ST_ABRV + AREA_FISHED +
+                      # LAND_YEAR + LAND_MONTH,
+                      data = subset(cflp_hl_1, 
+                                    SCHEDULE_NUMBER %in% gulf_kmk_trips$SCHEDULE_NUMBER),
+                      sum, na.rm = T)
+tot_kmk_land <- aggregate(tot_kg ~ SCHEDULE_NUMBER, #+
+                          # REGION + ST_ABRV + AREA_FISHED +
+                          # LAND_YEAR + LAND_MONTH,
+                          data = subset(cflp_hl_1, 
+                                        SCHEDULE_NUMBER %in% gulf_kmk_trips$SCHEDULE_NUMBER &
+                                          COMMON_NAME=='MACKERELS, KING AND CERO'),
+                          sum, na.rm = T)
+names(tot_kmk_land)[length(names(tot_kmk_land))] <- 'tot_kmk_kg'
+tot_landm <- merge(tot_land, tot_kmk_land)
+tot_landm$kmk_pro <- tot_landm$tot_kmk_kg / tot_landm$tot_kg
+
+kmk_trips <- subset(tot_landm, kmk_pro > .9, select = 'SCHEDULE_NUMBER')
+kmk_trips_catch <- subset(cflp_hl_1, 
+                          SCHEDULE_NUMBER %in% kmk_trips$SCHEDULE_NUMBER)
+
+kmk_trips_catch <- kmk_trips_catch |>
+  mutate(
+    season = case_when(
+      LAND_MONTH < 3 ~ 'win',
+      LAND_MONTH > 2 & LAND_MONTH < 6 ~ 'spr',
+      LAND_MONTH > 5 & LAND_MONTH < 9 ~ 'sum',
+      LAND_MONTH > 8 & LAND_MONTH < 12 ~ 'aut',
+      LAND_MONTH == 12 ~ 'win'))
+
+tot_sea_area <- aggregate(tot_kg ~ season + AREA_FISHED,
+                          data = subset(kmk_trips_catch,
+                                        REGION=='GOM' &
+                                          COMMON_NAME=='MACKERELS, KING AND CERO' &
+                                          LAND_YEAR>2012),
+                          # mean, na.rm = T)
+                          sum, na.rm = T)
+
+dat_sea <- reshape(tot_sea_area,timevar = 'season', idvar = 'AREA_FISHED', direction = 'wide')
+dat_sea[is.na(dat_sea)] <- 0
+
+dat_sea_sf <-  merge(dat_sea,
+                     sz_shp,
+                     by = c('AREA_FISHED')) |>
+  st_as_sf()
+# dat_sea_sf$centroids <- st_coordinates(st_centroid(dat_sea_sf))
+dat_sea_sf$lon <- st_coordinates(st_centroid(dat_sea_sf))[,'X']
+dat_sea_sf$lat <- st_coordinates(st_centroid(dat_sea_sf))[,'Y']
+
+test <- dat_sea_sf |> 
+  select(lon, lat, tot_kg.win, tot_kg.spr, tot_kg.sum, tot_kg.aut) |>
+  st_drop_geometry()
+
+theme_set(theme_bw())
+
+ggplot(data = dat_sea_sf) + geom_sf()  + 
+  geom_sf(data = states, fill = 'gray40', color = 1) + 
+  coord_sf(xlim = c(-97, -81), ylim = c(24, 31)) +
+  geom_scatterpie(aes(x=lon, y=lat),
+                  data=test,
+                  cols=c('tot_kg.win', 'tot_kg.spr', 'tot_kg.sum', 'tot_kg.aut'),
+                  color = 1) +
+  scale_fill_manual(values = c('purple','blue','green','orange'))
+ggsave(here(paste0("figures/plots/kmk_seasonal_totkg.png")))
+
