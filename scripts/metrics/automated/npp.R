@@ -245,7 +245,7 @@ par(mfrow=c(2,2),
 
 plot(ann_gwide_ts$year, ann_gwide_ts$pp, 
      typ = 'o', pch = 16, las = 1, asp = asp,
-     xlab = '', ylab = 'Net primary production (Mt)',
+     xlab = '', ylab = 'Net primary production (MtC)',
      main = 'Gulf-wide Annual',
      panel.first = list(if(mod1p<.05){
        abline(mod1, col = 'orange', lwd = 2)
@@ -261,7 +261,7 @@ plot(win_swfl_ts$year, win_swfl_ts$pp,
 
 plot(spr_wcfl_ts$year, spr_wcfl_ts$pp, 
      typ = 'o', pch = 16, las = 1, asp = asp,
-     xlab = '', ylab = 'Net primary production (Mt)',
+     xlab = '', ylab = 'Net primary production (MtC)',
      main = 'WCFL Spring',
      panel.first = list(if(mod3p<.05){
        abline(mod3, col = 'orange', lwd = 2)
