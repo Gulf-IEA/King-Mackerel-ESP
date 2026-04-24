@@ -107,6 +107,7 @@ vessel_select <- vessel_select[order(vessel_select$LAND_YEAR,
                                      vessel_select$kmk_tot_kg,
                                      vessel_select$kmk_pro,
                                      decreasing = T), ]
+### selection per state
 n <- 1
 ves_id <- list()
 for(i in c('GOM')){
@@ -122,6 +123,11 @@ for(i in c('GOM')){
 }
 kmk_ves <- unique(unlist(ves_id))
 
+### selection
+vessel_select$cummulative <- cumsum(vessel_select$tot_kg)/sum(vessel_select$tot_kg)
+kmk_ves <- vessel_select$VESSEL_ID[which(vessel_select$cummulative<=.8)]
+
+
 cflp_hl_0 <- cflp_hl[is.element(cflp_hl$VESSEL_ID, kmk_ves), ] |>
   subset(
     NUMGEAR < quantile(cflp_hl$NUMGEAR, .995, na.rm = T) &
@@ -131,10 +137,10 @@ cflp_hl_0 <- cflp_hl[is.element(cflp_hl$VESSEL_ID, kmk_ves), ] |>
       days_away_corrected < quantile(cflp_hl$days_away_corrected, .995, na.rm = T)
   )
 
-cflp_hl_0 <- subset(cflp_hl_0, NUMGEAR<7) |>
-  subset(EFFORT<20) |>
-  subset(days_away_corrected<10) |>
-  subset(tot_kg<1415)
+cflp_hl_0 <- subset(cflp_hl_0, NUMGEAR<=7) |>
+  subset(EFFORT<=20) |>
+  subset(days_away_corrected<=10) |>
+  subset(tot_kg<=1415)
 
 
 cflp_hl_1 <- cflp_hl_0
@@ -172,7 +178,7 @@ for(i in 2:7){
   abline(h = mean(cpue_yr[,i]),
          lty = 2)
   grid()
-  abline(lm(cpue_yr[,i] ~ cpue_yr$LAND_YEAR), col = 1, lwd = 2)
+  # abline(lm(cpue_yr[,i] ~ cpue_yr$LAND_YEAR), col = 1, lwd = 2)
   dev.off()
 }
 
@@ -189,7 +195,7 @@ for(i in 2:3){
   abline(h = mean(tot_yr[,i]),
          lty = 2)
   grid()
-  abline(lm(tot_yr[,i] ~ tot_yr$LAND_YEAR), col = 1, lwd = 2)
+  # abline(lm(tot_yr[,i] ~ tot_yr$LAND_YEAR), col = 1, lwd = 2)
   dev.off()
 }
 
@@ -226,11 +232,13 @@ for(i in 3:8){
       width = 7, height = 4, units = 'in', res = 300)
   plot(cpue_st_yr$LAND_YEAR, cpue_st_yr[,i], typ = 'n', xlab = 'Year', ylab = labels[i])
   for(j in 1:length(gulf)){
-    tmp <- subset(cpue_st_yr, ST_ABRV==gulf[j])
+    tmp <- subset(cpue_st_yr, ST_ABRV==gulf[j]) |>
+      merge(data.frame(LAND_YEAR = 1996:2024, ST_ABRV = gulf[j]), 
+            by = c('LAND_YEAR', 'ST_ABRV'), all.y = T)
     points(tmp$LAND_YEAR, tmp[,i], typ = 'o', col = j, pch = 16, lwd = 2)
   }
   grid()
-  legend('topleft',gulf, lty=1, col=1:length(gulf),bty = 'n', pch = 16, lwd = 2)
+  legend('topleft',gulf, col=1:length(gulf),bty = 'n', pch = 16)
   dev.off()
 }
 
@@ -244,11 +252,13 @@ for(i in 3:4){
       width = 7, height = 4, units = 'in', res = 300)
   plot(tot_st_yr$LAND_YEAR, tot_st_yr[,i], typ = 'n', xlab = 'year', ylab = labels2[i])
   for(j in 1:length(gulf)){
-    tmp <- subset(tot_st_yr, ST_ABRV==gulf[j])
+    tmp <- subset(tot_st_yr, ST_ABRV==gulf[j]) |>
+      merge(data.frame(LAND_YEAR = 1996:2024, ST_ABRV = gulf[j]), 
+            by = c('LAND_YEAR', 'ST_ABRV'), all.y = T)
     points(tmp$LAND_YEAR, tmp[,i], typ = 'o', col = j, pch = 16, lwd = 2)
   }
   grid()
-  legend('topleft',gulf, lty=1, col=1:length(gulf),bty = 'n', pch = 16, lwd = 2)
+  legend('topleft',gulf, col=1:length(gulf),bty = 'n', pch = 16)
   dev.off()
 }
 
@@ -287,6 +297,7 @@ png(here(paste0("figures/plots/mean_lth_trip_plot.png")),
 plot(days_yr$LAND_YEAR, days_yr$days_away_corrected,
      typ = 'o', pch = 16,
      xlab = 'year', ylab = 'Length of trip (days)')
+grid()
 dev.off()
 
 png(here(paste0("figures/plots/mean_st_lth_trip_plot.png")),
@@ -297,10 +308,12 @@ plot(days_yr_st$LAND_YEAR, days_yr_st$days_away_corrected,
 gulf <- c('AL', 'FL', 'LA', 'MS', 'TX')
 # gulf <- c('AL', 'FL', 'LA', 'MS')
 for(j in 1:length(gulf)){
-  tmp <- subset(days_yr_st, ST_ABRV==gulf[j])
+  tmp <- subset(days_yr_st, ST_ABRV==gulf[j]) |>
+    merge(data.frame(LAND_YEAR = 1996:2024, ST_ABRV = gulf[j]), 
+          by = c('LAND_YEAR', 'ST_ABRV'), all.y = T)
   points(tmp$LAND_YEAR, tmp$days_away_corrected, typ = 'o', col = j, pch = 16, lwd = 2)
 }
-legend('topleft',gulf, lty=1, col=1:length(gulf),bty = 'n', pch = 16, lwd = 2)
+legend('topleft',gulf, col=1:length(gulf),bty = 'n', pch = 16)
 grid()
 dev.off()
 
@@ -310,6 +323,7 @@ png(here(paste0("figures/plots/mean_num_trip_plot.png")),
 plot(trps_yr$LAND_YEAR, trps_yr$SCHEDULE_NUMBER,
      typ = 'o', pch = 16,
      xlab = 'year', ylab = 'Number of Trips')
+grid()
 dev.off()
 
 
@@ -321,10 +335,12 @@ plot(trps_yr_st$LAND_YEAR, trps_yr_st$SCHEDULE_NUMBER,
 gulf <- c('AL', 'FL', 'LA', 'MS', 'TX')
 # gulf <- c('AL', 'FL', 'LA', 'MS')
 for(j in 1:length(gulf)){
-  tmp <- subset(trps_yr_st, ST_ABRV==gulf[j])
+  tmp <- subset(trps_yr_st, ST_ABRV==gulf[j]) |>
+    merge(data.frame(LAND_YEAR = 1996:2024, ST_ABRV = gulf[j]), 
+          by = c('LAND_YEAR', 'ST_ABRV'), all.y = T)
   points(tmp$LAND_YEAR, tmp$SCHEDULE_NUMBER, typ = 'o', col = j, pch = 16, lwd = 2)
 }
-legend('topleft',gulf, lty=1, col=1:length(gulf),bty = 'n', pch = 16, lwd = 2)
+legend('topleft',gulf, col=1:length(gulf),bty = 'n', pch = 16)
 grid()
 dev.off()
 
