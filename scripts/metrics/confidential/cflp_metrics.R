@@ -172,7 +172,8 @@ ves_yr_90 <- aggregate(VESSEL_ID ~ LAND_YEAR,
 plot(ves_yr)
 png(here(paste0("figures/plots/kmk_ves_yr_plot.png")),
     width = 7, height = 4, units = 'in', res = 300)
-plot(ves_yr_10, typ = 'o', pch = 16, ylim = c(0,200))
+plot(ves_yr_10, typ = 'o', pch = 16, ylim = c(0,200),
+     xlab = 'Year', ylab = 'Number of Vessels with KMK landings')
 points(ves_yr_25, typ = 'o', pch = 16, col = 2)
 points(ves_yr_50, typ = 'o', pch = 16, col = 3)
 points(ves_yr_75, typ = 'o', pch = 16, col = 4)
