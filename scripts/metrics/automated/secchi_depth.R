@@ -6,6 +6,12 @@ library(terra)
 library(sf)
 library(reticulate)
 
+### this adds a fahrenheit axis on the right of the plot by converting the celcius default
+ax_convert_m2f <- function(vals, side = 4, n = 5, las = 1, ...){ ### ... used to pass other parameters for interior fxns
+  tick_val <- pretty(vals*3.28084, n = n, ...)
+  axis(side, tick_val/3.28084, tick_val, las = las, ...)
+}
+
 ### area of interest
 min_lon <- -98
 max_lon <- -80
@@ -131,7 +137,7 @@ ann_gwide_ts <- global(ann_gwide_layers, fun = c('mean',"range"), na.rm = TRUE, 
 
 ann_gwide_ts <- data.frame(
   year = unique(year_index), # Convert index back to Date
-  zsd = ann_gwide_ts$mean,
+  zsd = -ann_gwide_ts$mean,
   min = ann_gwide_ts$min,
   max = ann_gwide_ts$max
 )
@@ -152,7 +158,7 @@ win_swfl_ts <- global(win_swfl_layers, fun = c('mean',"range"), na.rm = TRUE, we
 
 win_swfl_ts <- data.frame(
   year = unique(year_index)[-1], # Convert index back to Date
-  zsd = win_swfl_ts$mean,
+  zsd = -win_swfl_ts$mean,
   min = win_swfl_ts$min,
   max = win_swfl_ts$max
 )
@@ -172,7 +178,7 @@ spr_wcfl_ts <- global(spr_wcfl_layers, fun = c('mean',"range"), na.rm = TRUE, we
 
 spr_wcfl_ts <- data.frame(
   year = unique(year_index)[-1], # Convert index back to Date
-  zsd = spr_wcfl_ts$mean,
+  zsd = -spr_wcfl_ts$mean,
   min = spr_wcfl_ts$min,
   max = spr_wcfl_ts$max
 )
@@ -192,7 +198,7 @@ sufa_latx_ts <- global(sufa_latx_layers, fun = c('mean',"range"), na.rm = TRUE, 
 
 sufa_latx_ts <- data.frame(
   year = unique(year_index), # Convert index back to Date
-  zsd = sufa_latx_ts$mean,
+  zsd = -sufa_latx_ts$mean,
   min = sufa_latx_ts$min,
   max = sufa_latx_ts$max
 )
@@ -218,39 +224,50 @@ setwd("~/R_projects/King-Mackerel-ESP/figures/plots")
 png('kmk_zsd.png', width = 8, height = 7, 
     units = 'in', res = 300)
 par(mfrow=c(2,2),
-    mar = c(3,4,3,1))
+    mar = c(3,4,3,3))
 
 plot(ann_gwide_ts$year, ann_gwide_ts$zsd, 
      typ = 'o', pch = 16, las = 1, asp = asp,
-     xlab = '', ylab = 'Secchi Depth (m)',
+     xlab = '', ylab = 'Secchi Depth',
      main = 'Gulf-wide Annual',
      panel.first = list(if(mod1p<.05){
        abline(mod1, col = 'orange', lwd = 2)
      }))
-
+mtext('(m)', side = 3, adj = -.1, line = .5)
+mtext('(ft)', side = 3, adj = 1.1, line = .5)
+ax_convert_m2f(axTicks(side = 2), n = 4)
 
 plot(win_swfl_ts$year, win_swfl_ts$zsd,
      typ = 'o', pch = 16, las = 1, asp = asp,
-     xlab = '', ylab = 'Secchi Depth (m)',
+     xlab = '', ylab = '',
      main = 'SWFL Winter',
      panel.first = list(if(mod2p<.05){
        abline(mod2, col = 'orange', lwd = 2)
      }))
+mtext('(m)', side = 3, adj = -.1, line = .5)
+mtext('(ft)', side = 3, adj = 1.1, line = .5)
+ax_convert_m2f(axTicks(side = 2), n = 4)
 
 plot(spr_wcfl_ts$year, spr_wcfl_ts$zsd, 
      typ = 'o', pch = 16, las = 1, asp = asp,
-     xlab = '', ylab = 'Secchi Depth (m)',
+     xlab = '', ylab = 'Secchi Depth',
      main = 'WCFL Spring',
      panel.first = list(if(mod3p<.05){
        abline(mod3, col = 'orange', lwd = 2)
      }))
+mtext('(m)', side = 3, adj = -.1, line = .5)
+mtext('(ft)', side = 3, adj = 1.1, line = .5)
+ax_convert_m2f(axTicks(side = 2), n = 4)
 
 plot(sufa_latx_ts$year, sufa_latx_ts$zsd,
      typ = 'o', pch = 16, , las = 1, asp = asp,
-     xlab = '', ylab = 'Secchi Depth (m)',
+     xlab = '', ylab = '',
      main = 'LATX Summer/Fall',
      panel.first = list(if(mod4p<.05){
        abline(mod4, col = 'orange', lwd = 2)
      }))
+mtext('(m)', side = 3, adj = -.1, line = .5)
+mtext('(ft)', side = 3, adj = 1.1, line = .5)
+ax_convert_m2f(axTicks(side = 2), n = 4)
 
 dev.off()
