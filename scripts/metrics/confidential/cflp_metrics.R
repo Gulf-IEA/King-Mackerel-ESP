@@ -15,7 +15,7 @@ sz_shp$AREA_FISHED <- sz_shp$SZ_ID
 setwd("~/data/shapefiles/ne_10m_admin_1_states_provinces")
 states <- vect('ne_10m_admin_1_states_provinces.shp') |> makeValid() |>
   st_as_sf() 
-states <- st_crop(states, xmin = -100, ymin = 24, xmax = -80, ymax = 31)
+states <- st_crop(states, xmin = -100, ymin = 24, xmax = -80, ymax = 32)
 
 
 ### boem platforms
@@ -23,10 +23,10 @@ setwd("~/R_projects/ESR-indicator-scratch/data/processed")
 plat <- read.csv('platforms_yr.csv')
 
 png(here(paste0("figures/plots/platfroms_plot.png")),
-    width = 10, height = 4, units = 'in', res = 300)
-b1 <- barplot(plat$nplt, 
-              col = 'gray50', las = 2,
-              xlab = '', ylab = 'Number of platforms')
+    width = 7, height = 4, units = 'in', res = 300)
+b1 <- barplot(plat$nplt, space = .5,
+              col = 'dodgerblue', las = 2,
+              xlab = '', ylab = 'Number of oil platforms')
 axis(1, b1[seq(4,length(b1),5)], seq(1945, 2025, 5))
 dev.off()
 
@@ -55,10 +55,9 @@ gom_st <- c('FL', 'AL', 'MS', 'LA', 'TX')
 
 setwd("C:/Users/brendan.turley/Documents/CMP/data/cflp")
 cflp <- readRDS('CFLPblake.rds')
-# cflp_ne <- subset(cflp, LAND_YEAR<2024 & LAND_YEAR>1999 & CATCH_TYPE == 'CATCH') |>
-#   subset(REGION == 'NATL' & is.element(ST_ABRV, natl_st))
-cflp <- subset(cflp, LAND_YEAR>1999 & CATCH_TYPE == 'CATCH') |>
-  subset(REGION == 'GOM' & is.element(ST_ABRV, gom_st))
+cflp <- subset(cflp, LAND_YEAR>1995 & CATCH_TYPE == 'CATCH') |>
+  subset(REGION == 'GOM' & is.element(ST_ABRV, gom_st)) |>
+  subset(AREA_FISHED!='1' & AREA_FISHED!='2' & !is.na(AREA_FISHED))
 gc()
 
 ### pull out handlines only
@@ -67,9 +66,6 @@ gear_keep <- c('H', 'E', 'TR')
 # gear_keep <- c('TR')
 cflp_hl <- subset(cflp , is.element(cflp$GEAR, gear_keep)) |>
   subset(FLAG_MULTIGEAR==0 & FLAG_MULTIAREA==0)
-# saveRDS(cflp_hl, 'cflp_gulfsa_temp.rds')
-## cflp_hl <- readRDS('cflp_gulfsa_temp.rds')
-# gc()
 
 #### CPUE calculation and days away correction ####-----------------------------
 ## following methods by Walter & McCarthy 2014 (1993-2013SEDAR38-DW-10)
@@ -134,6 +130,13 @@ cflp_hl_0 <- cflp_hl[is.element(cflp_hl$VESSEL_ID, kmk_ves), ] |>
       tot_kg < quantile(cflp_hl$tot_kg, .995, na.rm = T) &
       days_away_corrected < quantile(cflp_hl$days_away_corrected, .995, na.rm = T)
   )
+
+cflp_hl_0 <- subset(cflp_hl_0, NUMGEAR<7) |>
+  subset(EFFORT<20) |>
+  subset(days_away_corrected<10) |>
+  subset(tot_kg<1415)
+
+
 cflp_hl_1 <- cflp_hl_0
 rm(cflp_hl, cflp_hl_0)
 gc()
@@ -174,8 +177,8 @@ for(i in 2:7){
 }
 
 labels2 <- c('Year',
-            'Total hours fished',
-            'Total landings (kg)')
+             'Total hours fished',
+             'Total landings (kg)')
 
 for(i in 2:3){
   png(here(paste0("figures/plots/tot_",names(tot_yr)[i],"_plot.png")),
@@ -273,10 +276,10 @@ trps_yr <- aggregate(SCHEDULE_NUMBER ~ LAND_YEAR,
                      function(x) length(unique(x)))
 
 trps_yr_st <- aggregate(SCHEDULE_NUMBER ~ LAND_YEAR + ST_ABRV,
-                     data = subset(cflp_hl_1, 
-                                   COMMON_NAME=='MACKERELS, KING AND CERO' &
-                                     REGION=='GOM'),
-                     function(x) length(unique(x)))
+                        data = subset(cflp_hl_1, 
+                                      COMMON_NAME=='MACKERELS, KING AND CERO' &
+                                        REGION=='GOM'),
+                        function(x) length(unique(x)))
 
 
 png(here(paste0("figures/plots/mean_lth_trip_plot.png")),
@@ -388,10 +391,10 @@ image(2000:2024, 1:12,
 
 
 b <- boxplot(cpue ~ LAND_YEAR, data = subset(cflp_hl_1,
-                                                      COMMON_NAME=='MACKERELS, KING AND CERO'),
+                                             COMMON_NAME=='MACKERELS, KING AND CERO'),
              pch = 16, lty = 1, varwidth = F, staplewex = 0, lwd = 2, outline = F)
 b <- boxplot(tot_kg ~ LAND_YEAR, data = subset(cflp_hl_1,
-                                             COMMON_NAME=='MACKERELS, KING AND CERO'),
+                                               COMMON_NAME=='MACKERELS, KING AND CERO'),
              pch = 16, lty = 1, varwidth = F, staplewex = 0, lwd = 2, outline = F)
 
 
@@ -418,6 +421,8 @@ tot_landm$kmk_pro <- tot_landm$tot_kmk_kg / tot_landm$tot_kg
 kmk_trips <- subset(tot_landm, kmk_pro > .9, select = 'SCHEDULE_NUMBER')
 kmk_trips_catch <- subset(cflp_hl_1, 
                           SCHEDULE_NUMBER %in% kmk_trips$SCHEDULE_NUMBER)
+
+kmk_trips_catch <- gulf_kmk_trips
 
 kmk_trips_catch <- kmk_trips_catch |>
   mutate(
