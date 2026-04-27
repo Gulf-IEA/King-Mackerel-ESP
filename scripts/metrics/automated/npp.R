@@ -136,6 +136,225 @@ pp <- aperm(pp, c(2,1,3))
 pp_r <- rast(pp[dim(pp)[1]:1,,], crs="EPSG:4326")
 ext(pp_r) <- c(min_lon, max_lon, min_lat, max_lat)
 time(pp_r) <- as.Date(time)
+
+
+
+### gemini calculation
+
+### annual
+ann_gwide <- crop(pp_r, gulf_kmk) |> mask(gulf_kmk)
+cell_area <- cellSize(ann_gwide, unit = "m")
+
+# Calculate days in each month (handles leap years)
+days_in_month <- days_in_month(time(ann_gwide))
+
+# 1. Multiply daily rate by days in the month (Raster Algebra)
+npp_monthly_rate <- ann_gwide * days_in_month
+# 2. Multiply by cell area to get total mg C per grid cell
+npp_mg_per_cell <- npp_monthly_rate * cell_area
+
+# Sum all cells for each of the 240 layers (basin-wide monthly totals)
+monthly_basin_mg <- global(npp_mg_per_cell, fun = "sum", na.rm = TRUE)
+
+# Convert the results into a data frame for easier aggregation
+df <- data.frame(
+  year = year(time(ann_gwide)),
+  mg_C = monthly_basin_mg$sum
+)
+
+# Sum monthly totals into annual totals
+annual_npp_mg <- aggregate(mg_C ~ year, data = df, FUN = sum)
+
+# Convert mg to Metric Tonnes
+annual_npp_mg$tonnes_C <- annual_npp_mg$mg_C / 1e9
+annual_npp_mg$Mtonnes_C <- annual_npp_mg$tonnes_C / 1e6
+
+plot(annual_npp_mg$year, annual_npp_mg$Mtonnes_C, typ = 'b')
+
+
+# b. winter FL Keys to Naples; also winter off LA
+win_swfl <- crop(pp_r, swfl) |> mask(swfl)
+# win_swfl <- win_swfl[[winter_ind]]
+
+# 2. Identify the indices for April (4) and May (5)
+indices <- which(month(time(pp_r)) %in% c(1,2,3))
+
+# 3. Subset the raster and the days_in_month vector
+win_swfl <- win_swfl[[indices]]
+days_subset <- as.numeric(days_in_month[indices]) # Ensure it's numeric for math
+dates_subset <- time(pp_r)[indices]
+
+# 4. Calculate Area (if not already done)
+cell_area <- cellSize(win_swfl, unit = "m")
+
+# 5. Calculate total mg C for these specific months
+# (NPP rate * days in month * cell area)
+npp_mg_subset_win <- win_swfl * days_subset * cell_area
+
+# 6. Sum across the basin for each layer
+sum_mg_win <- global(npp_mg_subset_win, fun = "sum", na.rm = TRUE)
+
+# 7. Aggregate by Year
+df_winter <- data.frame(
+  year = year(dates_subset),
+  mg_C = sum_mg_win$sum
+)
+
+# Sum April and May together for each year
+annual_winter_npp <- aggregate(mg_C ~ year, data = df_winter, FUN = sum)
+
+# 8. Convert to Metric Tonnes (divide by 1e9)
+annual_winter_npp$tonnes_C <- annual_winter_npp$mg_C / 1e9
+annual_winter_npp$Mtonnes_C <- annual_winter_npp$tonnes_C / 1e6
+
+# View the result
+plot(annual_winter_npp$year, annual_winter_npp$Mtonnes_C, typ = 'b')
+
+
+
+# c. spring (April) and fall (Nov) off Tampa Bay
+spr_wcfl <- crop(pp_r, wcfl) |> mask(wcfl)
+
+# 2. Identify the indices for April (4) and May (5)
+indices <- which(month(time(pp_r)) %in% c(4,5))
+
+# 3. Subset the raster and the days_in_month vector
+spr_wcfl <- spr_wcfl[[indices]]
+days_subset <- as.numeric(days_in_month[indices]) # Ensure it's numeric for math
+dates_subset <- time(pp_r)[indices]
+
+# 4. Calculate Area (if not already done)
+cell_area <- cellSize(spr_wcfl, unit = "m")
+
+# 5. Calculate total mg C for these specific months
+# (NPP rate * days in month * cell area)
+npp_mg_subset_spr <- spr_wcfl * days_subset * cell_area
+
+# 6. Sum across the basin for each layer
+sum_mg_spr <- global(npp_mg_subset_spr, fun = "sum", na.rm = TRUE)
+
+# 7. Aggregate by Year
+df_spring <- data.frame(
+  year = year(dates_subset),
+  mg_C = sum_mg_spr$sum
+)
+
+# Sum April and May together for each year
+annual_spring_npp <- aggregate(mg_C ~ year, data = df_spring, FUN = sum)
+
+# 8. Convert to Metric Tonnes (divide by 1e9)
+annual_spring_npp$tonnes_C <- annual_spring_npp$mg_C / 1e9
+annual_spring_npp$Mtonnes_C <- annual_spring_npp$tonnes_C / 1e6
+
+# View the result
+plot(annual_spring_npp$year, annual_spring_npp$Mtonnes_C, typ = 'b')
+
+
+# d. summer/fall texas to FL panhandle
+sufa_latx <- crop(pp_r, latx) |> mask(latx)
+
+# 2. Identify the indices for April (4) and May (5)
+indices <- which(month(time(pp_r)) %in% c(6,7,8,9,10))
+
+# 3. Subset the raster and the days_in_month vector
+sufa_latx <- sufa_latx[[indices]]
+days_subset <- as.numeric(days_in_month[indices]) # Ensure it's numeric for math
+dates_subset <- time(pp_r)[indices]
+
+# 4. Calculate Area (if not already done)
+cell_area <- cellSize(sufa_latx, unit = "m")
+
+# 5. Calculate total mg C for these specific months
+# (NPP rate * days in month * cell area)
+npp_mg_subset_sufa <- sufa_latx * days_subset * cell_area
+
+# 6. Sum across the basin for each layer
+sum_mg_sufa <- global(npp_mg_subset_sufa, fun = "sum", na.rm = TRUE)
+
+# 7. Aggregate by Year
+df_sumfal <- data.frame(
+  year = year(dates_subset),
+  mg_C = sum_mg_sufa$sum
+)
+
+# Sum April and May together for each year
+annual_sumfal_npp <- aggregate(mg_C ~ year, data = df_sumfal, FUN = sum)
+
+# 8. Convert to Metric Tonnes (divide by 1e9)
+annual_sumfal_npp$tonnes_C <- annual_sumfal_npp$mg_C / 1e9
+annual_sumfal_npp$Mtonnes_C <- annual_sumfal_npp$tonnes_C / 1e6
+
+# View the result
+plot(annual_sumfal_npp$year, annual_sumfal_npp$Mtonnes_C, typ = 'b')
+
+
+### end
+
+### plots
+
+annual_npp_mg
+annual_winter_npp
+annual_spring_npp
+annual_sumfal_npp
+
+mod1 <- lm(Mtonnes_C ~ year, data = annual_npp_mg)
+mod1p <- summary(mod1)$coefficients[8]
+mod2 <- lm(Mtonnes_C ~ year, data = annual_winter_npp)
+mod2p <- summary(mod2)$coefficients[8]
+mod3 <- lm(Mtonnes_C ~ year, data = annual_spring_npp)
+mod3p <- summary(mod3)$coefficients[8]
+mod4 <- lm(Mtonnes_C ~ year, data = annual_sumfal_npp)
+mod4p <- summary(mod4)$coefficients[8]
+
+asp <- NA
+
+setwd("~/R_projects/King-Mackerel-ESP/figures/plots")
+png('kmk_pp.png', width = 8, height = 7, 
+    units = 'in', res = 300)
+par(mfrow=c(2,2),
+    mar = c(3,4,3,1))
+
+plot(annual_npp_mg$year, annual_npp_mg$Mtonnes_C, 
+     typ = 'o', pch = 16, las = 1, asp = asp,
+     xlab = '', ylab = 'Net primary production (MtC)',
+     main = 'Gulf-wide Annual',
+     panel.first = list(if(mod1p<.05){
+       abline(mod1, col = 'orange', lwd = 2)
+     }))
+
+plot(annual_winter_npp$year, annual_winter_npp$Mtonnes_C,
+     typ = 'o', pch = 16, las = 1, asp = asp,
+     xlab = '', ylab = '',
+     main = 'SWFL Winter',
+     panel.first = list(if(mod2p<.05){
+       abline(mod2, col = 'orange', lwd = 2)
+     }))
+
+plot(annual_spring_npp$year, annual_spring_npp$Mtonnes_C, 
+     typ = 'o', pch = 16, las = 1, asp = asp,
+     xlab = '', ylab = 'Net primary production (MtC)',
+     main = 'WCFL Spring',
+     panel.first = list(if(mod3p<.05){
+       abline(mod3, col = 'orange', lwd = 2)
+     }))
+
+plot(annual_sumfal_npp$year, annual_sumfal_npp$Mtonnes_C,
+     typ = 'o', pch = 16, , las = 1, asp = asp,
+     xlab = '', ylab = '',
+     main = 'LATX Summer/Fall',
+     panel.first = list(if(mod4p<.05){
+       abline(mod4, col = 'orange', lwd = 2)
+     }))
+
+dev.off()
+
+
+
+
+
+
+### old method; simplfied number of days per month
+
 # pv <- values(pp_r)
 # pv <- pv*4000^2*28
 pp_r2 <- app(pp_r, fun=function(x) x*(4000^2)*28/1e9) # multiply by area and number of days and divde to get mt
