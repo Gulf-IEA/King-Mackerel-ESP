@@ -6,6 +6,7 @@ library(sf)
 library(scatterpie)
 library(ggplot2)
 library(terra)
+library(lubridate)
 
 setwd("C:/Users/brendan.turley/Documents/data/shapefiles/cflp_statgrid")
 sz_shp <- vect('CFLP_StatGrid_2013_v20140210.shp') |>
@@ -519,4 +520,49 @@ ggplot(data = dat_sea_sf) + geom_sf()  +
                   color = 1) +
   scale_fill_manual(values = c('purple','blue','green','orange'))
 ggsave(here(paste0("figures/plots/kmk_seasonal_totkg.png")))
+
+
+### not used
+### cummulative landings per jday per year
+
+cflp_hl_1
+
+### adjust for fishing year
+# July 1 - June 30
+cflp_hl_1$yday <- yday(cflp_hl_1$LAND_DATE)
+cflp_hl_1$LAND_MONTH_c <- month(cflp_hl_1$LAND_DATE)
+cflp_hl_1$LAND_YEAR_c <- year(cflp_hl_1$LAND_DATE)
+cflp_hl_1$fish_year <- NA
+cflp_hl_1$fish_year <- ifelse(cflp_hl_1$LAND_MONTH_c>6, cflp_hl_1$LAND_YEAR_c, cflp_hl_1$LAND_YEAR_c-1)
+cflp_hl_1$fyday <-ifelse(cflp_hl_1$LAND_MONTH_c>6, cflp_hl_1$yday - yday(as.Date(paste0(cflp_hl_1$LAND_YEAR_c,'-07-01'))),
+                         yday(as.Date(paste0(cflp_hl_1$LAND_YEAR_c,'-12-31'))) 
+                         - yday(as.Date(paste0(cflp_hl_1$LAND_YEAR_c,'-07-01'))) +
+                           cflp_hl_1$yday )
+
+
+yrs <- sort(unique(cflp_hl_1$fish_year))[-1]
+# q50 <- rep(NA, length(yrs))
+qs <- matrix(NA, length(yrs), 4)
+par(mfrow=c(3,3))
+for(i in yrs){
+  tmp <- subset(cflp_hl_1, LAND_YEAR_c==i & 
+                  COMMON_NAME=='MACKERELS, KING AND CERO' &
+                  REGION=='GOM') |>
+    arrange(fyday)
+  cummul <- aggregate(tot_kg ~ fyday, data = tmp, sum, na.rm = T) |>
+    merge(data.frame(fyday = 1:366), all = T)
+  cummul$tot_kg[is.na(cummul$tot_kg)] <- 0
+  cummul$cumsum <- cumsum(cummul$tot_kg)
+  qs[which(i==yrs),] <- cbind(which(cummul$cumsum>=(.25*cummul$cumsum[nrow(cummul)]))[1],
+                              which(cummul$cumsum>=(.5*cummul$cumsum[nrow(cummul)]))[1],
+                              which(cummul$cumsum>=(.75*cummul$cumsum[nrow(cummul)]))[1],
+                              which(cummul$cumsum>=(.99*cummul$cumsum[nrow(cummul)]))[1])
+  
+  plot(cummul$fyday,cumsum(cummul$tot_kg), typ = 'l')
+  mtext(i)
+}
+plot(yrs,qs[,1], typ = 'o',pch = 16, ylim=c(range(qs)))
+points(yrs,qs[,2], typ = 'b',pch = 16, col = 2)
+points(yrs,qs[,3], typ = 'b',pch = 16, col = 3)
+points(yrs,qs[,4], typ = 'b',pch = 16, col = 4)
 
