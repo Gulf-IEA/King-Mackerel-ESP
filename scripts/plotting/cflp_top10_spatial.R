@@ -151,22 +151,26 @@ ggplot(data = trips_per_year) +
 ggplot(data = area_top10) +
   geom_sf(aes(fill = TOTAL_WHOLE_POUNDS), color = "white", size = 0.2) +
   facet_wrap(~ LAND_YEAR, ncol = 2) + 
-  scale_fill_viridis_c(option = "mako", direction = -1) +
+  scale_fill_viridis_c(option = "mako", direction = -1, labels = label_comma()) +
   geom_sf(data = world |> st_as_sf()) +
   coord_sf(ylim = c(24.5,30.5), xlim = c(-97, -81.5)) +
-  labs(fill = 'Total landings (lbs)') +
-  theme_bw()
+  labs(fill = 'Landings (lbs)') +
+  theme_bw() +
+  theme(legend.position = "inside", legend.position.inside = c(0.65, .15),
+        legend.key.size = unit(0.5, "cm"), legend.title = element_text(size = 10))
 ggsave('top10_landings.png', width = 7, height = 5, units = 'in',
        path = "~/R_projects/King-Mackerel-ESP/figures/plots")
 
 ggplot(data = trips_top10) +
   geom_sf(aes(fill = SCHEDULE_NUMBER), color = "white", size = 0.2) +
   facet_wrap(~ LAND_YEAR, ncol = 2) + 
-  scale_fill_viridis_c(option = "rocket", direction = -1) +
+  scale_fill_viridis_c(option = "rocket", direction = -1, labels = label_comma()) +
   geom_sf(data = world |> st_as_sf()) +
   coord_sf(ylim = c(24.5,30.5), xlim = c(-97, -81.5)) +
-  labs(fill = 'Number of Trips') +
-  theme_bw()
+  labs(fill = 'Trips') +
+  theme_bw() +
+  theme(legend.position = "inside", legend.position.inside = c(0.65, .15),
+        legend.key.size = unit(0.5, "cm"), legend.title = element_text(size = 10))
 ggsave('top10_trips.png', width = 7, height = 5, units = 'in',
        path = "~/R_projects/King-Mackerel-ESP/figures/plots")
 
