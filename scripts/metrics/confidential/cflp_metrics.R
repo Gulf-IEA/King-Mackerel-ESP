@@ -145,43 +145,50 @@ cflp_hl_0 <- subset(cflp_hl_0, NUMGEAR<=7) |>
 
 
 cflp_hl_1 <- cflp_hl_0
-rm(cflp_hl, cflp_hl_0)
+# rm(cflp_hl, cflp_hl_0)
 gc()
 
 
 #### vessels overtime ####----------------------------------------------
 
 ves_yr <- aggregate(VESSEL_ID ~ LAND_YEAR, 
-                       data = cflp,
-                       function(x) length(unique(x)))
+                    data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID),
+                    function(x) length(unique(x)))
 ves_yr_10 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
-                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.1)]),
+                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro<.1)]),
                        function(x) length(unique(x)))
 ves_yr_25 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
-           data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.25)]),
-           function(x) length(unique(x)))
+                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.1 & vessel_select$kmk_pro<.25)]),
+                       function(x) length(unique(x)))
 ves_yr_50 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
-                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.5)]),
+                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.25 & vessel_select$kmk_pro<.5)]),
                        function(x) length(unique(x)))
 ves_yr_75 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
-                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.7)]),
+                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.5 & vessel_select$kmk_pro<.75)]),
                        function(x) length(unique(x)))
 ves_yr_90 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
+                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.75 & vessel_select$kmk_pro<.9)]),
+                       function(x) length(unique(x)))
+ves_yr_100 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
                        data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.9)]),
                        function(x) length(unique(x)))
 
 plot(ves_yr)
-png(here(paste0("figures/plots/kmk_ves_yr_plot.png")),
-    width = 7, height = 4, units = 'in', res = 300)
-plot(ves_yr_10, typ = 'o', pch = 16, ylim = c(0,200),
-     xlab = 'Year', ylab = 'Number of Vessels with KMK landings')
+setwd("~/R_projects/King-Mackerel-ESP/figures/plots")
+png('kmk_ves_yr_plot.png',
+    width = 7, height = 5, units = 'in', res = 300)
+plot(ves_yr_10, typ = 'o', pch = 16, ylim = c(0,120), las = 1, 
+     xlab = 'Year', ylab = 'Vessels with KGM landings')
 points(ves_yr_25, typ = 'o', pch = 16, col = 2)
 points(ves_yr_50, typ = 'o', pch = 16, col = 3)
 points(ves_yr_75, typ = 'o', pch = 16, col = 4)
 points(ves_yr_90, typ = 'o', pch = 16, col = 5)
+points(ves_yr_100, typ = 'o', pch = 16, col = 6)
 grid()
-legend('bottomright', c('KMK 10%', 'KMK 25%', 'KMK 50%', 'KMK 75%', 'KMK 90%'),
-       pch = 16, col = c(1:5), bty = 'n', cex = .7)
+# legend('bottomright', c('KMK 10%', 'KMK 25%', 'KMK 50%', 'KMK 75%', 'KMK 90%'),
+       # pch = 16, col = c(1:5), bty = 'n', cex = .7)
+legend('topleft', c('10-25%', '25-50%', '50-75%', '75-90%', '>90%'),
+       pch = 16, col = c(2:6), bty = 'n', cex = .7, ncol=2)
 dev.off()
 
 #### cpue per region overtime ####----------------------------------------------
