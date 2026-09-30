@@ -56,17 +56,27 @@ gom_st <- c('FL', 'AL', 'MS', 'LA', 'TX')
 
 setwd("C:/Users/brendan.turley/Documents/CMP/data/cflp")
 cflp <- readRDS('CFLPblake.rds')
-cflp <- subset(cflp, LAND_YEAR>1995 & CATCH_TYPE == 'CATCH') |>
+cflp <- subset(cflp, LAND_YEAR>1998 & CATCH_TYPE == 'CATCH') |>
   subset(REGION == 'GOM' & is.element(ST_ABRV, gom_st)) |>
-  subset(AREA_FISHED!='1' & AREA_FISHED!='2' & !is.na(AREA_FISHED))
+  subset(AREA_FISHED!='1' & AREA_FISHED!='2' & !is.na(AREA_FISHED)) |>
+  filter(FLAG_GEAR == 0,
+         FLAG_MULTIGEAR == 0,
+         FLAG_MULTIAREA == 0,
+         FLAG_MULTIREGION == 0,
+         FLAG_REPORT == 0) |>
+  filter(FISHED/DAYS_AWAY<24) |>
+  filter(EFFORT >= 1)
 gc()
+
+### add fishing year
+cflp$fish_yr <- ifelse(cflp$LAND_MONTH < 7, cflp$LAND_YEAR - 1, cflp$LAND_YEAR)
+
 
 ### pull out handlines only
 # table(cflp$GEAR)
 gear_keep <- c('H', 'E', 'TR')
 # gear_keep <- c('TR')
-cflp_hl <- subset(cflp , is.element(cflp$GEAR, gear_keep)) |>
-  subset(FLAG_MULTIGEAR==0 & FLAG_MULTIAREA==0)
+cflp_hl <- subset(cflp , is.element(cflp$GEAR, gear_keep))
 
 #### CPUE calculation and days away correction ####-----------------------------
 ## following methods by Walter & McCarthy 2014 (1993-2013SEDAR38-DW-10)
@@ -90,8 +100,8 @@ gc()
 ### this sorts by region and state
 ### Walter sorts by year and then total landings to get at the 80%
 vessel_yrs <- with(subset(cflp_hl, COMMON_NAME=='MACKERELS, KING AND CERO',
-                          select = c(LAND_YEAR, VESSEL_ID, REGION, ST_ABRV)),
-                   aggregate(LAND_YEAR ~ VESSEL_ID + REGION + ST_ABRV,
+                          select = c(fish_yr, VESSEL_ID, REGION, ST_ABRV)),
+                   aggregate(fish_yr ~ VESSEL_ID + REGION + ST_ABRV,
                              FUN = function(x) length(unique(x))))
 vessel_tot <- with(subset(cflp_hl,
                           select = c(tot_kg, VESSEL_ID, REGION, ST_ABRV)),
@@ -104,7 +114,7 @@ vessel_select <- merge(vessel_yrs, vessel_tot,
                        by = c('VESSEL_ID', 'REGION','ST_ABRV')) |>
   merge(vessel_kmk_tot, by = c('VESSEL_ID','REGION','ST_ABRV'))
 vessel_select$kmk_pro <- vessel_select$kmk_tot_kg / vessel_select$tot_kg
-vessel_select <- vessel_select[order(vessel_select$LAND_YEAR,
+vessel_select <- vessel_select[order(vessel_select$fish_yr,
                                      vessel_select$kmk_tot_kg,
                                      vessel_select$kmk_pro,
                                      decreasing = T), ]
@@ -129,13 +139,19 @@ vessel_select$cummulative <- cumsum(vessel_select$tot_kg)/sum(vessel_select$tot_
 kmk_ves <- vessel_select$VESSEL_ID[which(vessel_select$cummulative<=.8)]
 
 
-cflp_hl_0 <- cflp_hl[is.element(cflp_hl$VESSEL_ID, kmk_ves), ] |>
-  subset(
-    NUMGEAR < quantile(cflp_hl$NUMGEAR, .995, na.rm = T) &
-      EFFORT < quantile(cflp_hl$EFFORT, .995, na.rm = T) &
-      FISHED < quantile(cflp_hl$FISHED, .995, na.rm = T) &
-      tot_kg < quantile(cflp_hl$tot_kg, .995, na.rm = T) &
-      days_away_corrected < quantile(cflp_hl$days_away_corrected, .995, na.rm = T)
+cflp_hl_0 <- subset(cflp_hl, COMMON_NAME=='MACKERELS, KING AND CERO' &
+                      REGION=='GOM') |>
+  subset(is.element(VESSEL_ID, kmk_ves)) |>
+  # cflp_hl[is.element(cflp_hl$VESSEL_ID, kmk_ves), ] |>
+  filter(
+    NUMGEAR <= quantile(NUMGEAR, 0.995, na.rm = TRUE),
+      EFFORT  <= quantile(EFFORT, 0.995, na.rm = TRUE),
+      DAYS_AWAY <= quantile(DAYS_AWAY, 0.995, na.rm = TRUE),
+      NUMBER_OF_CREW <= quantile(NUMBER_OF_CREW, 0.995, na.rm = TRUE),
+      days_away_corrected <= quantile(days_away_corrected, 0.995, na.rm = T),
+      FISHED >= quantile(FISHED, 0.0025, na.rm = TRUE),
+      FISHED <= quantile(FISHED, 0.9975, na.rm = TRUE),
+    cpue <= quantile(cpue, 0.9975, na.rm = TRUE)
   )
 
 cflp_hl_0 <- subset(cflp_hl_0, NUMGEAR<=7) |>
@@ -151,55 +167,65 @@ gc()
 
 #### vessels overtime ####----------------------------------------------
 
-ves_yr <- aggregate(VESSEL_ID ~ LAND_YEAR, 
-                    data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID),
+ves_yr <- aggregate(VESSEL_ID ~ fish_yr, 
+                    data = subset(cflp, COMMON_NAME=='MACKERELS, KING AND CERO'),
                     function(x) length(unique(x)))
-ves_yr_10 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
-                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro<.1)]),
-                       function(x) length(unique(x)))
-ves_yr_25 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
+ves_yr_10 <- aggregate(VESSEL_ID ~ fish_yr, 
                        data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.1 & vessel_select$kmk_pro<.25)]),
                        function(x) length(unique(x)))
-ves_yr_50 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
+ves_yr_25 <- aggregate(VESSEL_ID ~ fish_yr, 
                        data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.25 & vessel_select$kmk_pro<.5)]),
                        function(x) length(unique(x)))
-ves_yr_75 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
-                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.5 & vessel_select$kmk_pro<.75)]),
+ves_yr_50 <- aggregate(VESSEL_ID ~ fish_yr, 
+                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.5 & vessel_select$kmk_pro<.7)]),
                        function(x) length(unique(x)))
-ves_yr_90 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
-                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.75 & vessel_select$kmk_pro<.9)]),
+ves_yr_75 <- aggregate(VESSEL_ID ~ fish_yr, 
+                       data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.7 & vessel_select$kmk_pro<.9)]),
                        function(x) length(unique(x)))
-ves_yr_100 <- aggregate(VESSEL_ID ~ LAND_YEAR, 
+ves_yr_90 <- aggregate(VESSEL_ID ~ fish_yr, 
                        data = subset(cflp_hl, VESSEL_ID %in% vessel_select$VESSEL_ID[which(vessel_select$kmk_pro>=.9)]),
                        function(x) length(unique(x)))
 
-plot(ves_yr)
-setwd("~/R_projects/King-Mackerel-ESP/figures/plots")
-png('kmk_ves_yr_plot.png',
-    width = 7, height = 5, units = 'in', res = 300)
-plot(ves_yr_10, typ = 'o', pch = 16, ylim = c(0,120), las = 1, 
-     xlab = 'Year', ylab = 'Vessels with KGM landings')
+plot(ves_yr,typ='o')
+png(here(paste0("figures/plots/kmk_ves_yr_plot.png")),
+    width = 7, height = 4, units = 'in', res = 300)
+plot(ves_yr_10, typ = 'o', pch = 16, ylim = c(0,100),
+     xlab = 'Year', ylab = 'Number of Vessels with KMK landings')
 points(ves_yr_25, typ = 'o', pch = 16, col = 2)
 points(ves_yr_50, typ = 'o', pch = 16, col = 3)
 points(ves_yr_75, typ = 'o', pch = 16, col = 4)
 points(ves_yr_90, typ = 'o', pch = 16, col = 5)
-points(ves_yr_100, typ = 'o', pch = 16, col = 6)
 grid()
-# legend('bottomright', c('KMK 10%', 'KMK 25%', 'KMK 50%', 'KMK 75%', 'KMK 90%'),
-       # pch = 16, col = c(1:5), bty = 'n', cex = .7)
-legend('topleft', c('10-25%', '25-50%', '50-75%', '75-90%', '>90%'),
-       pch = 16, col = c(2:6), bty = 'n', cex = .7, ncol=2)
+legend('topleft', c('KMK 10%', 'KMK 25%', 'KMK 50%', 'KMK 75%', 'KMK 90%'),
+       pch = 16, col = c(1:5), bty = 'n', cex = .7)
 dev.off()
 
 #### cpue per region overtime ####----------------------------------------------
 
 ## CPUE = total kilograms of king mackerel/(number of lines fished*number of hooks per line*total hours fished)
-cpue_yr <- aggregate(cbind(cpue, pue, NUMGEAR, EFFORT, FISHED, tot_kg) ~ LAND_YEAR,
+# cpue_yr <- cflp_hl_1 |>
+#   group_by(fish_yr, ST_ABRV) |>
+#   summarize(cpue = mean(cpue, na.rm = T),
+#             pue = mean(pue, na.rm = T),
+#             NUMGEAR = mean(NUMGEAR, na.rm = T),
+#             EFFORT = mean(EFFORT, na.rm = T),
+#             FISHED = mean(FISHED, na.rm = T),
+#             tot_kg = mean(tot_kg, na.rm = T)) |>
+#   group_by(fish_yr) |>
+#   summarize(cpue = mean(cpue, na.rm = T),
+#             pue = mean(pue, na.rm = T),
+#             NUMGEAR = mean(NUMGEAR, na.rm = T),
+#             EFFORT = mean(EFFORT, na.rm = T),
+#             FISHED = mean(FISHED, na.rm = T),
+#             tot_kg = mean(tot_kg, na.rm = T)) |>
+#   as.data.frame()
+
+cpue_yr <- aggregate(cbind(cpue, pue, NUMGEAR, EFFORT, FISHED, tot_kg) ~ fish_yr,
                      data = subset(cflp_hl_1, 
                                    COMMON_NAME=='MACKERELS, KING AND CERO' &
                                      REGION=='GOM'),
                      mean, na.rm = T)
-tot_yr <- aggregate(cbind(FISHED, tot_kg) ~ LAND_YEAR,
+tot_yr <- aggregate(cbind(FISHED, tot_kg) ~ fish_yr,
                     data = subset(cflp_hl_1, 
                                   COMMON_NAME=='MACKERELS, KING AND CERO' &
                                     REGION=='GOM'),
@@ -214,16 +240,16 @@ labels <- c('Year',
             'Mean landings (kg)')
 
 for(i in 2:7){
-  png(here(paste0("figures/plots/mean_",names(cpue_yr)[i],"_plot.png")),
-      width = 7, height = 4, units = 'in', res = 300)
-  plot(cpue_yr$LAND_YEAR, cpue_yr[,i],
+  # png(here(paste0("figures/plots/mean_",names(cpue_yr)[i],"_plot.png")),
+  # width = 7, height = 4, units = 'in', res = 300)
+  plot(cpue_yr$fish_yr, cpue_yr[,i],
        typ = 'o', pch = 16, las = 1,
        xlab = 'Year', ylab = labels[i])
   abline(h = mean(cpue_yr[,i]),
          lty = 2)
   grid()
-  # abline(lm(cpue_yr[,i] ~ cpue_yr$LAND_YEAR), col = 1, lwd = 2)
-  dev.off()
+  # abline(lm(cpue_yr[,i] ~ cpue_yr$fish_yr), col = 1, lwd = 2)
+  # dev.off()
 }
 
 labels2 <- c('Year',
@@ -231,16 +257,16 @@ labels2 <- c('Year',
              'Total landings (kg)')
 
 for(i in 2:3){
-  png(here(paste0("figures/plots/tot_",names(tot_yr)[i],"_plot.png")),
-      width = 7, height = 4, units = 'in', res = 300)
-  plot(tot_yr$LAND_YEAR, tot_yr[,i],
+  # png(here(paste0("figures/plots/tot_",names(tot_yr)[i],"_plot.png")),
+      # width = 7, height = 4, units = 'in', res = 300)
+  plot(tot_yr$fish_yr, tot_yr[,i],
        typ = 'o', pch = 16,
        xlab = 'Year', ylab = labels2[i])
   abline(h = mean(tot_yr[,i]),
          lty = 2)
   grid()
-  # abline(lm(tot_yr[,i] ~ tot_yr$LAND_YEAR), col = 1, lwd = 2)
-  dev.off()
+  # abline(lm(tot_yr[,i] ~ tot_yr$fish_yr), col = 1, lwd = 2)
+  # dev.off()
 }
 
 ### end
@@ -250,15 +276,11 @@ for(i in 2:3){
 #### cpue per state overtime ####----------------------------------------------
 
 ## CPUE = total kilograms of king mackerel/(number of lines fished*number of hooks per line*total hours fished)
-cpue_st_yr <- aggregate(cbind(cpue, pue, NUMGEAR, EFFORT, FISHED, tot_kg) ~ LAND_YEAR + ST_ABRV,
-                        data = subset(cflp_hl_1, 
-                                      COMMON_NAME=='MACKERELS, KING AND CERO' &
-                                        REGION=='GOM'),
+cpue_st_yr <- aggregate(cbind(cpue, pue, NUMGEAR, EFFORT, FISHED, tot_kg) ~ fish_yr + ST_ABRV,
+                        data = subset(cflp_hl_1, fish_yr>1999),
                         mean, na.rm = T)
-tot_st_yr <- aggregate(cbind(FISHED, tot_kg) ~ LAND_YEAR + ST_ABRV,
-                       data = subset(cflp_hl_1, 
-                                     COMMON_NAME=='MACKERELS, KING AND CERO' &
-                                       REGION=='GOM'),
+tot_st_yr <- aggregate(cbind(FISHED, tot_kg) ~ fish_yr + ST_ABRV,
+                       data = subset(cflp_hl_1,  fish_yr>1999),
                        sum, na.rm = T)
 
 labels <- c('Year', 
@@ -272,18 +294,18 @@ labels <- c('Year',
 
 gulf <- c('AL', 'FL', 'LA', 'MS', 'TX')
 for(i in 3:8){
-  png(here(paste0("figures/plots/mean_st_",names(cpue_st_yr)[i],"_plot.png")),
-      width = 7, height = 4, units = 'in', res = 300)
-  plot(cpue_st_yr$LAND_YEAR, cpue_st_yr[,i], typ = 'n', xlab = 'Year', ylab = labels[i])
+  # png(here(paste0("figures/plots/mean_st_",names(cpue_st_yr)[i],"_plot.png")),
+      # width = 7, height = 4, units = 'in', res = 300)
+  plot(cpue_st_yr$fish_yr, cpue_st_yr[,i]/mean(cpue_st_yr[,i],na.rm = T), typ = 'n', xlab = 'Year', ylab = labels[i])
   for(j in 1:length(gulf)){
     tmp <- subset(cpue_st_yr, ST_ABRV==gulf[j]) |>
-      merge(data.frame(LAND_YEAR = 1996:2024, ST_ABRV = gulf[j]), 
-            by = c('LAND_YEAR', 'ST_ABRV'), all.y = T)
-    points(tmp$LAND_YEAR, tmp[,i], typ = 'o', col = j, pch = 16, lwd = 2)
+      merge(data.frame(fish_yr = 1996:2024, ST_ABRV = gulf[j]), 
+            by = c('fish_yr', 'ST_ABRV'), all.y = T)
+    points(tmp$fish_yr, tmp[,i]/mean(tmp[,i],na.rm = T), typ = 'o', col = j, pch = 16, lwd = 2)
   }
   grid()
   legend('topleft',gulf, col=1:length(gulf),bty = 'n', pch = 16)
-  dev.off()
+  # dev.off()
 }
 
 labels2 <- c('Year',
@@ -292,18 +314,18 @@ labels2 <- c('Year',
              'Total landings (kg)')
 
 for(i in 3:4){
-  png(here(paste0("figures/plots/tot_st_",names(tot_st_yr)[i],"_plot.png")),
-      width = 7, height = 4, units = 'in', res = 300)
-  plot(tot_st_yr$LAND_YEAR, tot_st_yr[,i], typ = 'n', xlab = 'year', ylab = labels2[i])
+  # png(here(paste0("figures/plots/tot_st_",names(tot_st_yr)[i],"_plot.png")),
+      # width = 7, height = 4, units = 'in', res = 300)
+  plot(tot_st_yr$fish_yr, tot_st_yr[,i], typ = 'n', xlab = 'year', ylab = labels2[i])
   for(j in 1:length(gulf)){
     tmp <- subset(tot_st_yr, ST_ABRV==gulf[j]) |>
-      merge(data.frame(LAND_YEAR = 1996:2024, ST_ABRV = gulf[j]), 
-            by = c('LAND_YEAR', 'ST_ABRV'), all.y = T)
-    points(tmp$LAND_YEAR, tmp[,i], typ = 'o', col = j, pch = 16, lwd = 2)
+      merge(data.frame(fish_yr = 1996:2024, ST_ABRV = gulf[j]), 
+            by = c('fish_yr', 'ST_ABRV'), all.y = T)
+    points(tmp$fish_yr, tmp[,i], typ = 'o', col = j, pch = 16, lwd = 2)
   }
   grid()
   legend('topleft',gulf, col=1:length(gulf),bty = 'n', pch = 16)
-  dev.off()
+  # dev.off()
 }
 
 ### end
@@ -311,25 +333,25 @@ for(i in 3:4){
 
 
 ### has the length of trips changed or have there been less days fished?
-days_yr <- aggregate(days_away_corrected ~ LAND_YEAR,
+days_yr <- aggregate(days_away_corrected ~ fish_yr,
                      data = subset(cflp_hl_1, 
                                    COMMON_NAME=='MACKERELS, KING AND CERO' &
                                      REGION=='GOM'),
                      mean, na.rm = T) #median value not informative
 
-days_yr_st <- aggregate(days_away_corrected ~ LAND_YEAR + ST_ABRV,
+days_yr_st <- aggregate(days_away_corrected ~ fish_yr + ST_ABRV,
                         data = subset(cflp_hl_1, 
                                       COMMON_NAME=='MACKERELS, KING AND CERO' &
                                         REGION=='GOM'),
                         mean, na.rm = T) #median value not informative
 
-trps_yr <- aggregate(SCHEDULE_NUMBER ~ LAND_YEAR,
+trps_yr <- aggregate(SCHEDULE_NUMBER ~ fish_yr,
                      data = subset(cflp_hl_1, 
                                    COMMON_NAME=='MACKERELS, KING AND CERO' &
                                      REGION=='GOM'),
                      function(x) length(unique(x)))
 
-trps_yr_st <- aggregate(SCHEDULE_NUMBER ~ LAND_YEAR + ST_ABRV,
+trps_yr_st <- aggregate(SCHEDULE_NUMBER ~ fish_yr + ST_ABRV,
                         data = subset(cflp_hl_1, 
                                       COMMON_NAME=='MACKERELS, KING AND CERO' &
                                         REGION=='GOM'),
@@ -338,7 +360,7 @@ trps_yr_st <- aggregate(SCHEDULE_NUMBER ~ LAND_YEAR + ST_ABRV,
 
 png(here(paste0("figures/plots/mean_lth_trip_plot.png")),
     width = 7, height = 4, units = 'in', res = 300)
-plot(days_yr$LAND_YEAR, days_yr$days_away_corrected,
+plot(days_yr$fish_yr, days_yr$days_away_corrected,
      typ = 'o', pch = 16,
      xlab = 'year', ylab = 'Length of trip (days)')
 grid()
@@ -346,16 +368,16 @@ dev.off()
 
 png(here(paste0("figures/plots/mean_st_lth_trip_plot.png")),
     width = 7, height = 4, units = 'in', res = 300)
-plot(days_yr_st$LAND_YEAR, days_yr_st$days_away_corrected,
+plot(days_yr_st$fish_yr, days_yr_st$days_away_corrected,
      typ = 'n',
      xlab = 'year', ylab = 'Length of trip (days)')
 gulf <- c('AL', 'FL', 'LA', 'MS', 'TX')
 # gulf <- c('AL', 'FL', 'LA', 'MS')
 for(j in 1:length(gulf)){
   tmp <- subset(days_yr_st, ST_ABRV==gulf[j]) |>
-    merge(data.frame(LAND_YEAR = 1996:2024, ST_ABRV = gulf[j]), 
-          by = c('LAND_YEAR', 'ST_ABRV'), all.y = T)
-  points(tmp$LAND_YEAR, tmp$days_away_corrected, typ = 'o', col = j, pch = 16, lwd = 2)
+    merge(data.frame(fish_yr = 1996:2024, ST_ABRV = gulf[j]), 
+          by = c('fish_yr', 'ST_ABRV'), all.y = T)
+  points(tmp$fish_yr, tmp$days_away_corrected, typ = 'o', col = j, pch = 16, lwd = 2)
 }
 legend('topleft',gulf, col=1:length(gulf),bty = 'n', pch = 16)
 grid()
@@ -364,7 +386,7 @@ dev.off()
 
 png(here(paste0("figures/plots/mean_num_trip_plot.png")),
     width = 7, height = 4, units = 'in', res = 300)
-plot(trps_yr$LAND_YEAR, trps_yr$SCHEDULE_NUMBER,
+plot(trps_yr$fish_yr, trps_yr$SCHEDULE_NUMBER,
      typ = 'o', pch = 16,
      xlab = 'year', ylab = 'Number of Trips')
 grid()
@@ -373,16 +395,16 @@ dev.off()
 
 png(here(paste0("figures/plots/mean_st_num_trip_plot.png")),
     width = 7, height = 4, units = 'in', res = 300)
-plot(trps_yr_st$LAND_YEAR, trps_yr_st$SCHEDULE_NUMBER,
+plot(trps_yr_st$fish_yr, trps_yr_st$SCHEDULE_NUMBER,
      typ = 'n',
      xlab = 'year', ylab = 'Number of Trips')
 gulf <- c('AL', 'FL', 'LA', 'MS', 'TX')
 # gulf <- c('AL', 'FL', 'LA', 'MS')
 for(j in 1:length(gulf)){
   tmp <- subset(trps_yr_st, ST_ABRV==gulf[j]) |>
-    merge(data.frame(LAND_YEAR = 1996:2024, ST_ABRV = gulf[j]), 
-          by = c('LAND_YEAR', 'ST_ABRV'), all.y = T)
-  points(tmp$LAND_YEAR, tmp$SCHEDULE_NUMBER, typ = 'o', col = j, pch = 16, lwd = 2)
+    merge(data.frame(fish_yr = 1996:2024, ST_ABRV = gulf[j]), 
+          by = c('fish_yr', 'ST_ABRV'), all.y = T)
+  points(tmp$fish_yr, tmp$SCHEDULE_NUMBER, typ = 'o', col = j, pch = 16, lwd = 2)
 }
 legend('topleft',gulf, col=1:length(gulf),bty = 'n', pch = 16)
 grid()
@@ -450,10 +472,13 @@ image(2000:2024, 1:12,
       breaks = seq(0,.8,.05), col = cmocean('dense')(16))
 
 
-b <- boxplot(cpue ~ LAND_YEAR, data = subset(cflp_hl_1,
+b <- boxplot(cpue ~ fish_yr, data = subset(cflp_hl_1,
                                              COMMON_NAME=='MACKERELS, KING AND CERO'),
              pch = 16, lty = 1, varwidth = F, staplewex = 0, lwd = 2, outline = F)
-b <- boxplot(tot_kg ~ LAND_YEAR, data = subset(cflp_hl_1,
+b <- boxplot(cpue ~ fish_yr + ST_ABRV, data = subset(cflp_hl_1,
+                                           COMMON_NAME=='MACKERELS, KING AND CERO'),
+             pch = 16, lty = 1, varwidth = F, staplewex = 0, lwd = 2, outline = F)
+b <- boxplot(tot_kg ~ fish_yr, data = subset(cflp_hl_1,
                                                COMMON_NAME=='MACKERELS, KING AND CERO'),
              pch = 16, lty = 1, varwidth = F, staplewex = 0, lwd = 2, outline = F)
 
@@ -463,13 +488,13 @@ gulf_kmk_trips <- subset(cflp_hl_1,
                          COMMON_NAME=='MACKERELS, KING AND CERO' & REGION=='GOM')
 tot_land <- aggregate(tot_kg ~ SCHEDULE_NUMBER, #+
                       # REGION + ST_ABRV + AREA_FISHED +
-                      # LAND_YEAR + LAND_MONTH,
+                      # fish_yr + LAND_MONTH,
                       data = subset(cflp_hl_1, 
                                     SCHEDULE_NUMBER %in% gulf_kmk_trips$SCHEDULE_NUMBER),
                       sum, na.rm = T)
 tot_kmk_land <- aggregate(tot_kg ~ SCHEDULE_NUMBER, #+
                           # REGION + ST_ABRV + AREA_FISHED +
-                          # LAND_YEAR + LAND_MONTH,
+                          # fish_yr + LAND_MONTH,
                           data = subset(cflp_hl_1, 
                                         SCHEDULE_NUMBER %in% gulf_kmk_trips$SCHEDULE_NUMBER &
                                           COMMON_NAME=='MACKERELS, KING AND CERO'),
@@ -497,7 +522,7 @@ tot_sea_area <- aggregate(tot_kg ~ season + AREA_FISHED,
                           data = subset(kmk_trips_catch,
                                         REGION=='GOM' &
                                           COMMON_NAME=='MACKERELS, KING AND CERO' &
-                                          LAND_YEAR>2012),
+                                          fish_yr>2012),
                           # mean, na.rm = T)
                           sum, na.rm = T)
 
